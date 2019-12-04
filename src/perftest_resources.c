@@ -1010,6 +1010,7 @@ void alloc_ctx(struct pingpong_context *ctx,struct perftest_parameters *user_par
 	* with reference to number of flows and number of QPs */
 	ctx->buff_size = INC(BUFF_SIZE(ctx->size, ctx->cycle_buffer),
 				 ctx->cache_line_size) * 2 * num_of_qps_factor * user_param->flows;
+	ctx->memory_size = 300*1024*1024;
 	ctx->send_qp_buff_size = ctx->buff_size / num_of_qps_factor / 2;
 	ctx->flow_buff_size = ctx->send_qp_buff_size / user_param->flows;
 	user_param->buff_size = ctx->buff_size;
@@ -1140,6 +1141,7 @@ int destroy_ctx(struct pingpong_context *ctx,
 	}
 
 	for (i = 0; i < dereg_counter; i++) {
+		ctx->mr[i]->length = ctx->memory_size;
 		if (ibv_dereg_mr(ctx->mr[i])) {
 			fprintf(stderr, "Failed to deregister MR #%d\n", i+1);
 			test_result = 1;
@@ -1504,7 +1506,7 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 		#if defined(__FreeBSD__)
 		posix_memalign(ctx->buf, user_param->cycle_buffer, ctx->buff_size);
 		#else
-		ctx->buf = memalign(user_param->cycle_buffer, ctx->buff_size);
+		ctx->buf = memalign(ctx->cycle_buffer, ctx->buff_size);
 		#endif
 		if (pp_init_mmap(ctx, ctx->buff_size, user_param->mmap_file,
 				 user_param->mmap_offset))
@@ -1526,7 +1528,7 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 				}
 				memset(ctx->buf[qp_index], 0, ctx->buff_size);
 			} else if  (ctx->is_contig_supported == FAILURE) {
-				ctx->buf[qp_index] = memalign(user_param->cycle_buffer, ctx->buff_size);
+				ctx->buf[qp_index] = memalign(ctx->cycle_buffer, ctx->buff_size);
 			}
 			#endif
 			if (!ctx->buf[qp_index]) {
@@ -1572,16 +1574,17 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 	if (ctx->is_contig_supported == SUCCESS || user_param->use_odp) {
 		reg_mr_exp_in.pd = ctx->pd;
 		reg_mr_exp_in.addr = ctx->buf[qp_index];
-		reg_mr_exp_in.length = ctx->buff_size;
+		reg_mr_exp_in.length = ctx->memory_size;
 		reg_mr_exp_in.exp_access = exp_flags;
 		reg_mr_exp_in.comp_mask = 0;
 
 		ctx->mr[qp_index] = ibv_exp_reg_mr(&reg_mr_exp_in);
+		ctx->mr[qp_index]->length = ctx->buff_size;
 	}
 	else
-		ctx->mr[qp_index] = ibv_reg_mr(ctx->pd, ctx->buf[qp_index], ctx->buff_size, flags);
+		ctx->mr[qp_index] = ibv_reg_mr(ctx->pd, ctx->buf[qp_index], ctx->memory_size, flags);
 	#else
-	ctx->mr[qp_index] = ibv_reg_mr(ctx->pd, ctx->buf[qp_index], ctx->buff_size, flags);
+	ctx->mr[qp_index] = ibv_reg_mr(ctx->pd, ctx->buf[qp_index], ctx->memory_size, flags);
 	#endif
 
 	if (!ctx->mr[qp_index]) {
@@ -3782,7 +3785,7 @@ int run_iter_bw(struct pingpong_context *ctx,struct perftest_parameters *user_pa
 					else {
 						err = (ctx->post_send_func_pointer)(ctx->qp[index],
 							&ctx->wr[index*user_param->post_list],&bad_wr);
-					}
+                    }
 					if (err) {
 						fprintf(stderr,"Couldn't post send: qp %d scnt=%lu \n",index,ctx->scnt[index]);
 						return_value = FAILURE;
