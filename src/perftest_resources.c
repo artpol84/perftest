@@ -646,7 +646,7 @@ static inline int post_send_method_dbg(struct pingpong_context *ctx, int index,
         #endif
 	struct ibv_send_wr 	*bad_wr = NULL;
 	uint32_t wr_offset = index*user_param->post_list;
-	memset(ctx->wr[wr_offset].sg_list->addr, scnt, ctx->wr[wr_offset].sg_list->length);
+	memset((void*)ctx->wr[wr_offset].sg_list->addr, scnt, ctx->wr[wr_offset].sg_list->length);
 	return ibv_post_send(ctx->qp[index], &ctx->wr[index*user_param->post_list], &bad_wr);
 }
 
@@ -2725,7 +2725,8 @@ int ctx_set_recv_wqes(struct pingpong_context *ctx,struct perftest_parameters *u
 				}
 
 			} else {
-
+				struct ibv_recv_wr *wr = &ctx->rwr[i * user_param->recv_post_list];
+				memset((void*)wr->sg_list->addr, 0, wr->length);
 				if (ibv_post_recv(ctx->qp[i],&ctx->rwr[i * user_param->recv_post_list],&bad_wr_recv)) {
 					fprintf(stderr, "Couldn't post recv Qp = %d: counter=%d\n",i,j);
 					return 1;
@@ -4225,7 +4226,7 @@ int run_iter_lat_send(struct pingpong_context *ctx,struct perftest_parameters *u
 							}
 
 						} else {
-							memset(ctx->rwr[wc.wr_id].sg_list->addr, 0, ctx->rwr[wc.wr_id].sg_list->length);
+							memset((void*)ctx->rwr[wc.wr_id].sg_list->addr, 0, ctx->rwr[wc.wr_id].sg_list->length);
 							if (ibv_post_recv(ctx->qp[wc.wr_id], &ctx->rwr[wc.wr_id], &bad_wr_recv)) {
 								fprintf(stderr, "Couldn't post recv: rcnt=%lu\n", rcnt);
 								return 15;
