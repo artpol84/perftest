@@ -646,7 +646,7 @@ static inline int post_send_method_dbg(struct pingpong_context *ctx, int index,
 //        #endif
 	struct ibv_send_wr 	*bad_wr = NULL;
 	uint32_t wr_offset = index*user_param->post_list;
-	memset((void*)ctx->wr[wr_offset].sg_list->addr, scnt, ctx->wr[wr_offset].sg_list->length);
+	*((uint64_t)(void*)ctx->wr[wr_offset].sg_list->addr) = scnt;
 	return ibv_post_send(ctx->qp[index], &ctx->wr[index*user_param->post_list], &bad_wr);
 }
 
