@@ -638,7 +638,7 @@ static inline int post_send_method(struct pingpong_context *ctx, int index,
 }
 
 static inline int post_send_method_dbg(struct pingpong_context *ctx, int index,
-        struct perftest_parameters *user_param, unsigned char scnt)
+        struct perftest_parameters *user_param, uint64_t scnt)
 {
 //        #ifdef HAVE_IBV_WR_API
 //	if (!user_param->use_old_post_send)
