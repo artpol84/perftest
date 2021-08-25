@@ -4301,6 +4301,11 @@ int run_iter_lat_send(struct pingpong_context *ctx,struct perftest_parameters *u
 				poll = 0;
 				ctx->wr[0].send_flags &= ~IBV_SEND_SIGNALED;
 			}
+
+
+			if (!(scnt % 1000)) {
+				printf("State: sent: %lu, recvd: %lu\n", scnt, rcnt);
+			}
 		}
 	}
 
