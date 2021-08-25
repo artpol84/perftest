@@ -4303,7 +4303,7 @@ int run_iter_lat_send(struct pingpong_context *ctx,struct perftest_parameters *u
 			}
 
 
-			if (!(scnt % 1000)) {
+			if (!(scnt % 10)) {
 				printf("State: sent: %lu, recvd: %lu\n", scnt, rcnt);
 			}
 		}
