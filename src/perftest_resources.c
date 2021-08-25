@@ -640,10 +640,10 @@ static inline int post_send_method(struct pingpong_context *ctx, int index,
 static inline int post_send_method_dbg(struct pingpong_context *ctx, int index,
         struct perftest_parameters *user_param, unsigned char scnt)
 {
-        #ifdef HAVE_IBV_WR_API
-	if (!user_param->use_old_post_send)
-		return (*ctx->new_post_send_work_request_func_pointer)(ctx, index, user_param);
-        #endif
+//        #ifdef HAVE_IBV_WR_API
+//	if (!user_param->use_old_post_send)
+//		return (*ctx->new_post_send_work_request_func_pointer)(ctx, index, user_param);
+//        #endif
 	struct ibv_send_wr 	*bad_wr = NULL;
 	uint32_t wr_offset = index*user_param->post_list;
 	memset((void*)ctx->wr[wr_offset].sg_list->addr, scnt, ctx->wr[wr_offset].sg_list->length);
