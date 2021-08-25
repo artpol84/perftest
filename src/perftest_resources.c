@@ -2726,7 +2726,7 @@ int ctx_set_recv_wqes(struct pingpong_context *ctx,struct perftest_parameters *u
 
 			} else {
 				struct ibv_recv_wr *wr = &ctx->rwr[i * user_param->recv_post_list];
-				memset((void*)wr->sg_list->addr, 0, wr->length);
+				memset((void*)wr->sg_list->addr, 0, wr->sg_list->length);
 				if (ibv_post_recv(ctx->qp[i],&ctx->rwr[i * user_param->recv_post_list],&bad_wr_recv)) {
 					fprintf(stderr, "Couldn't post recv Qp = %d: counter=%d\n",i,j);
 					return 1;
