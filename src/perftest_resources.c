@@ -627,12 +627,23 @@ static int new_post_atomic_cs_sge_xrc(struct pingpong_context *ctx, int index,
  *
  */
 static inline int post_send_method(struct pingpong_context *ctx, int index,
-        struct perftest_parameters *user_param, unsigned char scnt)
+        struct perftest_parameters *user_param)
 {
 	#ifdef HAVE_IBV_WR_API
 	if (!user_param->use_old_post_send)
 		return (*ctx->new_post_send_work_request_func_pointer)(ctx, index, user_param);
 	#endif
+	struct ibv_send_wr 	*bad_wr = NULL;
+	return ibv_post_send(ctx->qp[index], &ctx->wr[index*user_param->post_list], &bad_wr);
+}
+
+static inline int post_send_method_dbg(struct pingpong_context *ctx, int index,
+        struct perftest_parameters *user_param, unsigned char scnt)
+{
+        #ifdef HAVE_IBV_WR_API
+	if (!user_param->use_old_post_send)
+		return (*ctx->new_post_send_work_request_func_pointer)(ctx, index, user_param);
+        #endif
 	struct ibv_send_wr 	*bad_wr = NULL;
 	uint32_t wr_offset = index*user_param->post_list;
 	memset(ctx->wr[wr_offset].sg_list->addr, scnt, ctx->wr[wr_offset].sg_list->length);
@@ -4261,7 +4272,7 @@ int run_iter_lat_send(struct pingpong_context *ctx,struct perftest_parameters *u
 				break;
 
 			/* send the packet that's in index 0 on the buffer */
-			err = post_send_method(ctx, 0, user_param, scnt);
+			err = post_send_method_dbg(ctx, 0, user_param, scnt);
 
 			if (err) {
 				fprintf(stderr,"Couldn't post send: scnt=%lu \n",scnt);
