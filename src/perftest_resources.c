@@ -1606,6 +1606,8 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 		flags |= IBV_ACCESS_REMOTE_ATOMIC;
 	}
 
+	flags |= IBV_ACCESS_SVA;
+
 #ifdef HAVE_RO
 	if (user_param->disable_pcir == 0) {
 		flags |= IBV_ACCESS_RELAXED_ORDERING;
