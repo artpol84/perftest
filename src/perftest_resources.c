@@ -1567,16 +1567,14 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 	#endif
 
 	/* ODP */
-	#ifdef HAVE_EX_ODP
 	if (user_param->use_odp) {
-		if ( !check_odp_support(ctx, user_param) )
-			return FAILURE;
+		// if ( !check_odp_support(ctx, user_param) )
+		// 	return FAILURE;
 
 		/* ODP does not support contig pages */
 		ctx->is_contig_supported = FAILURE;
-		flags |= IBV_ACCESS_ON_DEMAND;
+		flags |= IBV_ACCESS_ON_DEMAND | IBV_ACCESS_SVA;
 	}
-	#endif
 
 	if (user_param->memory_type == MEMORY_MMAP) {
 		#if defined(__FreeBSD__)
@@ -1804,6 +1802,7 @@ destroy_mr:
 
 	return FAILURE;
 }
+
 
 /******************************************************************************
  *
