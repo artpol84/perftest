@@ -1567,16 +1567,14 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 	#endif
 
 	/* ODP */
-	#ifdef HAVE_EX_ODP
 	if (user_param->use_odp) {
-		if ( !check_odp_support(ctx, user_param) )
-			return FAILURE;
+		// if ( !check_odp_support(ctx, user_param) )
+		// 	return FAILURE;
 
 		/* ODP does not support contig pages */
 		ctx->is_contig_supported = FAILURE;
-		flags |= IBV_ACCESS_ON_DEMAND;
+		flags |= IBV_ACCESS_ON_DEMAND | IBV_ACCESS_SVA;
 	}
-	#endif
 
 	if (user_param->memory_type == MEMORY_MMAP) {
 		#if defined(__FreeBSD__)
@@ -1605,8 +1603,6 @@ int create_single_mr(struct pingpong_context *ctx, struct perftest_parameters *u
 	} else if (user_param->verb == ATOMIC) {
 		flags |= IBV_ACCESS_REMOTE_ATOMIC;
 	}
-
-	flags |= IBV_ACCESS_SVA;
 
 #ifdef HAVE_RO
 	if (user_param->disable_pcir == 0) {
@@ -1763,6 +1759,50 @@ static int create_payload(struct perftest_parameters *user_param)
 /******************************************************************************
  *
  ******************************************************************************/
+int create_mr_old(struct pingpong_context *ctx, struct perftest_parameters *user_param)
+{
+	int i;
+	int mr_index = 0;
+
+	if (user_param->has_payload_modification){
+		if (create_payload(user_param)){
+			return 1;
+		}
+	}
+
+	/* create first MR */
+	if (create_single_mr(ctx, user_param, 0)) {
+		fprintf(stderr, "failed to create mr\n");
+		return 1;
+	}
+	mr_index++;
+
+	/* create the rest if needed, or copy the first one */
+	for (i = 1; i < user_param->num_of_qps; i++) {
+		if (user_param->mr_per_qp) {
+			if (create_single_mr(ctx, user_param, i)) {
+				fprintf(stderr, "failed to create mr\n");
+				goto destroy_mr;
+			}
+			mr_index++;
+		} else {
+			ALLOCATE(ctx->mr[i], struct ibv_mr, 1);
+			memset(ctx->mr[i], 0, sizeof(struct ibv_mr));
+			ctx->mr[i] = ctx->mr[0];
+			// cppcheck-suppress arithOperationsOnVoidPointer
+			ctx->buf[i] = ctx->buf[0] + (i*BUFF_SIZE(ctx->size, ctx->cycle_buffer));
+		}
+	}
+
+	return 0;
+
+destroy_mr:
+	for (i = 0; i < mr_index; i++)
+		ibv_dereg_mr(ctx->mr[i]);
+
+	return FAILURE;
+}
+
 int create_mr(struct pingpong_context *ctx, struct perftest_parameters *user_param)
 {
 	int i;
@@ -1806,6 +1846,7 @@ destroy_mr:
 
 	return FAILURE;
 }
+
 
 /******************************************************************************
  *
